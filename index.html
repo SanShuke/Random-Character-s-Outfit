@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Photo Roulette – Telegram Mini App</title>
+<link rel="preload" as="audio" href="assets/button.wav">
+<link rel="preload" as="audio" href="assets/tick.wav">
+<link rel="preload" as="audio" href="assets/spin_start.wav">
+<link rel="preload" as="audio" href="assets/stop.wav">
+<link rel="preload" as="audio" href="assets/popup.wav">
+<style>
+/* ====== СТИЛИ (адаптив, как в твоём десктопном приложении) ====== */
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:#f3f3f0;color:#111;font-family:ui-rounded,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+.screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100svh;padding:16px}
+.hidden{display:none !important}
+
+.btn{border:none;border-radius:22px;padding:14px 18px;min-width:260px;font:700 16px/1.1 inherit;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.08);transition:all .15s}
+.btn:active{transform:translateY(1px)}
+.btn.white{background:#fff;color:#000}
+.btn.black{background:#111;color:#fff;opacity:.95}
+.btn.black:disabled{background:rgba(0,0,0,.15);color:#fff;opacity:1;cursor:not-allowed;box-shadow:none}
+.btn.small{min-width:140px}
+#btn-go{margin-top:20px}
+#btn-load{min-width:175px;padding:10px 14px;font-size:14px}
+
+.counter{font-weight:700;margin-bottom:12px}
+.hint{color:#777;margin-top:18px}
+
+.drum-wrap{position:relative;width:100%;height:420px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.drum{display:flex;align-items:center;gap:18px;will-change:transform}
+.card{width:256px;height:256px;border-radius:24px;overflow:hidden;background:#ddd;box-shadow:0 6px 14px rgba(0,0,0,.1);border:2px solid rgba(255,255,255,.95)}
+.card img{width:100%;height:100%;object-fit:cover}
+.center-indicator{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);width:0;height:0;border-left:12px solid transparent;border-right:12px solid transparent;border-bottom:14px solid rgba(0,0,0,.45);filter:drop-shadow(0 2px 4px rgba(0,0,0,.25));pointer-events:none}
+
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center}
+.popup{display:flex;flex-direction:column;align-items:center;gap:16px}
+.winner{width:min(90vw,512px);height:min(90vw,512px);border-radius:26px;border:3px solid #fff;box-shadow:0 0 40px rgba(255,255,255,.45);animation:whiteGlow 2.4s ease-in-out infinite alternate, pulse 3.8s ease-in-out .6s infinite;will-change:transform,box-shadow}
+.winner.pop{animation:popInGlow 420ms cubic-bezier(.17,.94,.35,1.12) forwards, pulse 3.8s ease-in-out .42s infinite}
+
+@keyframes popInGlow{
+  0%{transform:scale(.85);opacity:0;box-shadow:0 0 0 rgba(255,255,255,0)}
+  60%{transform:scale(1.05);opacity:1;box-shadow:0 0 90px rgba(255,255,255,.3)}
+  100%{transform:scale(1);opacity:1;box-shadow:0 0 160px rgba(255,255,255,.35)}
+}
+@keyframes whiteGlow{
+  from{box-shadow:0 0 40px rgba(255,255,255,.45),0 0 80px rgba(255,255,255,.35),0 0 120px rgba(255,255,255,.25)}
+  to{box-shadow:0 0 55px rgba(255,255,255,.65),0 0 110px rgba(255,255,255,.45),0 0 160px rgba(255,255,255,.35)}
+}
+@keyframes pulse{0%{transform:scale(.985)}50%{transform:scale(1.015)}100%{transform:scale(.985)}}
+
+/* адаптив */
+@media (max-width:1400px){.card{width:224px;height:224px}.winner{width:min(90vw,448px);height:min(90vw,448px)}#btn-go{min-width:420px;padding:22px 26px;font-size:22px}}
+@media (max-width:1000px){.card{width:200px;height:200px}.winner{width:min(90vw,384px);height:min(90vw,384px)}#btn-go{min-width:340px;padding:20px 22px;font-size:20px}}
+@media (max-width:700px){.card{width:180px;height:180px}.winner{width:min(90vw,320px);height:min(90vw,320px)}#btn-go{min-width:280px;padding:18px 20px;font-size:18px}#btn-load{min-width:150px;font-size:13px}}
+@media (max-width:480px){.card{width:160px;height:160px}.winner{width:min(90vw,280px);height:min(90vw,280px)}#btn-go{min-width:240px;padding:16px 18px;font-size:16px}#btn-load{min-width:130px;font-size:12px;padding:8px 10px}}
+</style>
+</head>
+<body>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+<div class="screen" id="screen-start">
+  <div class="counter" id="counter" hidden>Загружено <span id="count">0</span> фотографий</div>
+  <input id="file" type="file" accept="image/*" multiple hidden>
+  <button id="btn-load" class="btn white">Загрузить фотографии</button>
+  <button id="btn-go" class="btn black" disabled>Let's go</button>
+  <div class="hint">Максимум 8 фото</div>
+</div>
+
+<section class="screen hidden" id="screen-spin">
+  <div class="drum-wrap">
+    <div id="drum" class="drum"></div>
+    <div class="center-indicator"></div>
+  </div>
+</section>
+
+<div id="overlay" class="overlay hidden">
+  <div class="popup">
+    <img id="winner-img" class="winner" alt="">
+    <button id="btn-done" class="btn white small">Готово</button>
+  </div>
+</div>
+
+<audio id="s-button" src="assets/button.wav" preload="auto"></audio>
+<audio id="s-spin" src="assets/spin_start.wav" preload="auto"></audio>
+<audio id="s-tick" src="assets/tick.wav" preload="auto"></audio>
+<audio id="s-stop" src="assets/stop.wav" preload="auto"></audio>
+<audio id="s-popup" src="assets/popup.wav" preload="auto"></audio>
+
+<script>
+/* ====== Telegram WebApp init ====== */
+const tg = window.Telegram?.WebApp;
+if (tg) {
+  tg.ready();
+  tg.expand();                      // раскрыть на весь экран
+  tg.disableVerticalSwipes?.();     // чтобы экран не дёргался
+}
+
+/* ====== ЛОГИКА ====== */
+const MAX = 8;
+const GAP = 18;
+let images = [];
+
+const $ = sel => document.querySelector(sel);
+const btnLoad = $('#btn-load');
+const btnGo = $('#btn-go');
+const file = $('#file');
+const screenStart = $('#screen-start');
+const screenSpin = $('#screen-spin');
+const counter = $('#counter');
+const countEl = $('#count');
+const drum = $('#drum');
+const overlay = $('#overlay');
+const btnDone = $('#btn-done');
+const winnerImg = $('#winner-img');
+const drumWrap = document.querySelector('.drum-wrap');
+
+const sButton = $('#s-button'), sSpin = $('#s-spin'), sTick = $('#s-tick'), sStop = $('#s-stop'), sPopup = $('#s-popup');
+function play(a, rate=1, vol=1){ try{ a.pause(); a.currentTime=0; a.playbackRate=rate; a.volume=vol; a.play(); }catch{} }
+
+btnLoad.addEventListener('click', ()=>{
+  play(sButton,1,0.45);
+  file.click();
+});
+
+file.addEventListener('change', (e)=>{
+  const files = Array.from(e.target.files||[]).slice(0, MAX);
+  images = files.map(f => ({ src: URL.createObjectURL(f) }));
+  countEl.textContent = images.length;
+  counter.hidden = images.length === 0;
+  btnGo.disabled = images.length === 0;
+});
+
+btnGo.addEventListener('click', async ()=>{
+  if(!images.length) return;
+  play(sButton,1,0.45);
+  await new Promise(r=>setTimeout(r,80));
+  play(sSpin,1,0.35);
+
+  drum.innerHTML = '';
+  const reps = 14;
+  for(let i=0;i<reps;i++){
+    images.forEach(img=>{
+      const card = document.createElement('div');
+      card.className = 'card';
+      const el = document.createElement('img');
+      el.src = img.src;
+      card.appendChild(el);
+      drum.appendChild(card);
+    });
+  }
+
+  screenStart.classList.add('hidden');
+  screenSpin.classList.remove('hidden');
+  await new Promise(requestAnimationFrame);
+
+  const firstCard = drum.querySelector('.card');
+  const itemSize = firstCard.getBoundingClientRect().width; // адаптивная ширина
+  const gap = parseFloat(getComputedStyle(drum).gap)||GAP;
+  const distancePerItem = itemSize + gap;
+
+  const getCenterOffset = ()=> (drumWrap.clientWidth/2) - (itemSize/2);
+  let centerOffset = getCenterOffset();
+  const onResize = ()=> centerOffset = getCenterOffset();
+  window.addEventListener('resize', onResize);
+
+  const plannedIndex = Math.floor(Math.random()*images.length);
+  const loops = 6;
+  const totalDistance = loops*images.length*distancePerItem + plannedIndex*distancePerItem;
+
+  const indexFromX = (x)=> Math.round((x - itemSize/2) / distancePerItem) % images.length;
+
+  const duration = 3200 + Math.floor(Math.random()*1000);
+  const start = performance.now();
+  let lastTick = -1;
+
+  function frame(now){
+    const t = Math.min(1, (now - start)/duration);
+    const eased = 1 - Math.pow(1-t, 3);
+    const x = eased * totalDistance;
+
+    drum.style.transform = `translateX(${centerOffset - x}px)`;
+
+    const idx = ((indexFromX(x)%images.length)+images.length)%images.length;
+    if(idx!==lastTick){
+      lastTick=idx;
+      const rate = Math.max(0.6, 1.6 - t);
+      play(sTick, rate, 0.35);
+    }
+
+    if(t<1) requestAnimationFrame(frame);
+    else {
+      play(sStop,1,0.4);
+      window.removeEventListener('resize', onResize);
+
+      // Победитель по факту: ищем карточку, чьё центрирование ближе к центру окна
+      const wrapRect = drumWrap.getBoundingClientRect();
+      const centerX = wrapRect.left + wrapRect.width/2;
+      let best = 0, bestDist = Infinity;
+      const nodes = Array.from(drum.children);
+      nodes.forEach((node,i)=>{
+        const r = node.getBoundingClientRect();
+        const cx = r.left + r.width/2;
+        const d = Math.abs(cx - centerX);
+        if(d<bestDist){ bestDist=d; best=i; }
+      });
+      const finalIndex = best % images.length;
+      showWinner(images[finalIndex].src);
+    }
+  }
+  requestAnimationFrame(frame);
+});
+
+function showWinner(src){
+  winnerImg.src = src;
+  winnerImg.classList.add('pop');
+  winnerImg.addEventListener('animationend', function onEnd(e){
+    if(e.animationName==='popInGlow'){
+      winnerImg.classList.remove('pop');
+      winnerImg.removeEventListener('animationend', onEnd);
+    }
+  });
+  overlay.classList.remove('hidden');
+  play(sPopup,1,0.4);
+}
+
+btnDone.addEventListener('click', ()=>{
+  play(sButton,1,0.45);
+  images.forEach(i=> URL.revokeObjectURL(i.src));
+  images=[];
+  drum.innerHTML='';
+  overlay.classList.add('hidden');
+  counter.hidden=true;
+  btnGo.disabled=true;
+  screenSpin.classList.add('hidden');
+  screenStart.classList.remove('hidden');
+});
+</script>
+</body>
+</html>
