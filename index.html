@@ -13,13 +13,13 @@
   --shadow-btn:0 2px 8px rgba(0,0,0,.08);
   --shadow-card:0 6px 14px rgba(0,0,0,.10);
 
-  /* кнопки по умолчанию (светлая тема) */
+  /* кнопки (светлая тема): очень тёмно-серые с белым текстом */
   --btn-bg:#1a1d21; --btn-fg:#ffffff;
   --btn-bg-disabled:#3b3f45; --btn-fg-disabled:#cfd3da;
 
-  /* переменные превью — будут переопределяться из JS */
-  --thumb:64px;            /* размер квадрата превью */
-  --preview-cols:4;        /* количество колонок (макс 4) */
+  /* предпросмотр — управляем из JS */
+  --thumb:64px;
+  --preview-cols:4;
 }
 @media (prefers-color-scheme: dark){
   :root{
@@ -29,17 +29,21 @@
     --shadow-btn:0 2px 10px rgba(0,0,0,.35);
     --shadow-card:0 6px 16px rgba(0,0,0,.38);
 
-    /* кнопки для тёмной темы */
+    /* кнопки (тёмная тема): очень светло-серые с чёрным текстом */
     --btn-bg:#f2f3f5; --btn-fg:#0b0c0f;
     --btn-bg-disabled:#d6d9de; --btn-fg-disabled:#6c7077;
   }
 }
 
 *{box-sizing:border-box}
-html,body{height:100%;margin:0;background:var(--bg);color:var(--fg);
-  font-family:ui-rounded,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
-
-.screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100svh;padding:16px}
+html,body{
+  height:100%;margin:0;background:var(--bg);color:var(--fg);
+  font-family:ui-rounded,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+}
+.screen{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-height:100svh;padding:16px;
+}
 .hidden{display:none!important}
 
 /* Кнопки */
@@ -47,10 +51,14 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--fg);
   border:none;border-radius:22px;min-width:260px;padding:14px 18px;
   font:700 16px/1.1 inherit;cursor:pointer;
   color:var(--btn-fg);background:var(--btn-bg);box-shadow:var(--shadow-btn);
-  transition:transform .06s ease, filter .15s ease, opacity .15s ease
+  transition:transform .06s ease,filter .15s ease,opacity .15s ease;
 }
 .btn:active{transform:translateY(1px)}
-.btn:disabled{background:var(--btn-bg-disabled);color:var(--btn-fg-disabled);cursor:not-allowed;box-shadow:none;opacity:.9}
+.btn:disabled{
+  background:var(--btn-bg-disabled);
+  color:var(--btn-fg-disabled);
+  cursor:not-allowed;box-shadow:none;opacity:.9;
+}
 .btn.small{min-width:140px}
 #btn-load{min-width:175px;padding:10px 14px;font-size:14px}
 #btn-go{margin-top:20px}
@@ -59,24 +67,32 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--fg);
 .hint{color:var(--muted);margin-top:18px}
 
 /* ====== ПРЕДПРОСМОТР ====== */
-.preview{width:100%;padding:0 10%;margin-top:16px}
+.preview{
+  width:100%;
+  padding:0 10%;
+  margin-top:24px; /* отступ от кнопки загрузки */
+}
 .preview-grid{
   display:grid;
-  grid-template-columns: repeat(var(--preview-cols), minmax(0,1fr));
+  grid-template-columns:repeat(var(--preview-cols),minmax(0,1fr));
   gap:12px;
   justify-items:center;
 }
 .preview-item{
-  width:var(--thumb); height:var(--thumb); aspect-ratio:1/1;
-  border-radius:14px; overflow:hidden;
-  background:var(--card-bg); border:2px solid var(--card-border);
-  box-shadow:var(--shadow-card); display:flex;align-items:center;justify-content:center;
+  width:var(--thumb);height:var(--thumb);aspect-ratio:1/1;
+  border-radius:14px;overflow:hidden;
+  background:var(--card-bg);border:2px solid var(--card-border);
+  box-shadow:var(--shadow-card);display:flex;align-items:center;justify-content:center;
 }
-.preview-item .img-wrap{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
-.preview-item img{max-width:100%;max-height:100%;object-fit:contain;display:block}
+.preview-item img{
+  max-width:100%;max-height:100%;object-fit:contain;display:block;
+}
 
 /* ====== Барабан ====== */
-.drum-wrap{position:relative;width:100%;height:420px;display:flex;align-items:center;justify-content:center;overflow:hidden;contain:paint}
+.drum-wrap{
+  position:relative;width:100%;height:420px;
+  display:flex;align-items:center;justify-content:center;overflow:hidden;contain:paint;
+}
 .drum{display:flex;align-items:center;gap:18px;will-change:transform;transform:translate3d(0,0,0)}
 .drum-wrap.spinning .card{box-shadow:none}
 
@@ -85,25 +101,33 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--fg);
   width:256px;height:256px;aspect-ratio:1/1;border-radius:24px;overflow:hidden;
   background:var(--card-bg);border:2px solid var(--card-border);box-shadow:var(--shadow-card)
 }
-.card .img-wrap{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
 .card img{max-width:100%;max-height:100%;object-fit:contain;display:block}
 
 /* Индикатор */
 .center-indicator{
   position:absolute;left:50%;bottom:18px;transform:translateX(-50%);
   width:0;height:0;border-left:12px solid transparent;border-right:12px solid transparent;
-  border-bottom:14px solid var(--pointer);filter:drop-shadow(0 2px 4px rgba(0,0,0,.25));pointer-events:none
+  border-bottom:14px solid var(--pointer);
+  filter:drop-shadow(0 2px 4px rgba(0,0,0,.25));pointer-events:none;
 }
 
 /* Попап победителя */
-.overlay{position:fixed;inset:0;background:var(--overlay);display:flex;align-items:center;justify-content:center}
+.overlay{
+  position:fixed;inset:0;background:var(--overlay);
+  display:flex;align-items:center;justify-content:center;
+}
 .popup{display:flex;flex-direction:column;align-items:center;gap:16px}
 .winnerBox{
-  width:min(90vw,512px);height:min(90vw,512px);aspect-ratio:1/1;border-radius:26px;border:3px solid #fff;
+  width:min(90vw,512px);height:min(90vw,512px);
+  aspect-ratio:1/1;border-radius:26px;border:3px solid #fff;
   overflow:hidden;display:flex;align-items:center;justify-content:center;
-  animation:whiteGlow 2.4s ease-in-out infinite alternate, pulse 3.8s ease-in-out .6s infinite;will-change:transform,box-shadow
+  animation:whiteGlow 2.4s ease-in-out infinite alternate,pulse 3.8s ease-in-out .6s infinite;
+  will-change:transform,box-shadow;
 }
-.winnerBox.pop{animation:popInGlow 420ms cubic-bezier(.17,.94,.35,1.12) forwards, pulse 3.8s ease-in-out .42s infinite}
+.winnerBox.pop{
+  animation:popInGlow 420ms cubic-bezier(.17,.94,.35,1.12) forwards,
+             pulse 3.8s ease-in-out .42s infinite;
+}
 .winner{max-width:100%;max-height:100%;object-fit:contain;display:block}
 
 /* Анимации */
@@ -113,16 +137,17 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--fg);
   100%{transform:scale(1);opacity:1;box-shadow:0 0 160px rgba(255,255,255,.35)}
 }
 @keyframes whiteGlow{
-  from{box-shadow:0 0 40px rgba(255,255,255,.45),0 0 80px rgba(255,255,255,.35),0 0 120px rgba(255,255,255,.25)}
-  to{box-shadow:0 0 55px rgba(255,255,255,.65),0 0 110px rgba(255,255,255,.45),0 0 160px rgba(255,255,255,.35)}
+  from{box-shadow:0 0 40px rgba(255,255,255,.45),0 0 80px rgba(255,255,255,.35)}
+  to{box-shadow:0 0 55px rgba(255,255,255,.65),0 0 110px rgba(255,255,255,.45)}
 }
 @keyframes pulse{0%{transform:scale(.985)}50%{transform:scale(1.015)}100%{transform:scale(.985)}}
 
-/* Адаптив */
-@media (max-width:1400px){.card{width:224px;height:224px}#btn-go{min-width:420px;padding:22px 26px;font-size:22px}}
-@media (max-width:1000px){.card{width:200px;height:200px}#btn-go{min-width:340px;padding:20px 22px;font-size:20px}}
-@media (max-width:700px){.card{width:180px;height:180px}#btn-go{min-width:280px;padding:18px 20px;font-size:18px}#btn-load{min-width:150px;font-size:13px}}
-@media (max-width:480px){.card{width:160px;height:160px}#btn-go{min-width:240px;padding:16px 18px;font-size:16px}#btn-load{min-width:130px;font-size:12px;padding:8px 10px}}
+/* Адаптив (минимально нужное) */
+@media (max-width:700px){
+  .card{width:180px;height:180px}
+  #btn-go{min-width:280px;padding:18px 20px;font-size:18px}
+  #btn-load{min-width:150px;font-size:13px}
+}
 </style>
 </head>
 <body>
@@ -132,12 +157,13 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--fg);
   <div class="counter" id="counter" hidden>Загружено <span id="count">0</span> фотографий</div>
   <input id="file" type="file" accept="image/*" multiple hidden>
 
-  <!-- БЛОК ПРЕДПРОСМОТРА -->
+  <button id="btn-load" class="btn">Загрузить фотографии</button>
+
+  <!-- ПРЕДПРОСМОТР -->
   <section id="preview" class="preview hidden">
     <div id="preview-grid" class="preview-grid"></div>
   </section>
 
-  <button id="btn-load" class="btn">Загрузить фотографии</button>
   <button id="btn-go" class="btn" disabled>Let's go</button>
   <div class="hint">Максимум 8 фото</div>
 </div>
@@ -181,35 +207,48 @@ file.addEventListener('change',(e)=>{
   countEl.textContent=images.length;
   counter.hidden=images.length===0;
   btnGo.disabled=images.length===0;
-
-  buildPreview();               // ← рисуем предпросмотр
+  buildPreview();
 },{passive:true});
+
+/* ====== ПРАВИЛА раскладки предпросмотра ======
+  n<=2  → колонки = n         (2 → "2 в ряд")
+  n=3   → колонки = 3         (1 ряд из 3)
+  n=4   → колонки = 2         (2×2 — по твоему прошлому требованию)
+  n=5/6 → колонки = 3         (2 ряда: 3+2 и 3+3)
+  n>=7  → колонки = 4         (2 ряда: 4+3 / 4+4)
+  размер превью: 128px при 1–3 колонках, 64px при 4 колонках
+*/
+function computePreviewCols(n){
+  if (n <= 2) return n;      // 1 или 2
+  if (n === 3) return 3;     // 3 в ряд
+  if (n === 4) return 2;     // 2×2
+  if (n === 5 || n === 6) return 3; // 3 столбца → 3+2 / 3+3
+  return 4;                  // 7–8 → максимум 4 в ряд
+}
 
 /* Построить превью-сетку */
 function buildPreview(){
   previewGrid.innerHTML='';
   if(!images.length){ preview.classList.add('hidden'); return; }
 
-  // размер и колонки: ≤4 → 2x128px, >4 → 4x64px
-  const small = images.length > 4;
-  const cols  = small ? 4 : 2;
-  const size  = small ? 64 : 128;
+  const n = images.length;
+  const cols = computePreviewCols(n);
+  const size = (cols === 4) ? 64 : 128;  // 4 в ряд → 4x меньше, иначе 2x меньше
 
   document.documentElement.style.setProperty('--preview-cols', cols);
-  document.documentElement.style.setProperty('--thumb', size+'px');
+  document.documentElement.style.setProperty('--thumb', size + 'px');
 
   const frag=document.createDocumentFragment();
   for(const img of images){
     const item=document.createElement('div'); item.className='preview-item';
-    const wrap=document.createElement('div'); wrap.className='img-wrap';
     const el=document.createElement('img'); el.src=img.src; el.loading='eager'; el.decoding='async';
-    wrap.appendChild(el); item.appendChild(wrap); frag.appendChild(item);
+    item.appendChild(el); frag.appendChild(item);
   }
   previewGrid.appendChild(frag);
   preview.classList.remove('hidden');
 }
 
-/* Запуск рулетки — длинная лента (~120 карточек) */
+/* ====== Рулетка: длинная лента (~120 карточек) ====== */
 btnGo.addEventListener('click', async ()=>{
   if(!images.length) return;
 
@@ -221,9 +260,8 @@ btnGo.addEventListener('click', async ()=>{
   for (let r=0;r<reps;r++){
     for (const img of images){
       const card=document.createElement('div'); card.className='card';
-      const wrap=document.createElement('div'); wrap.className='img-wrap';
       const el=document.createElement('img'); el.src=img.src; el.loading='eager'; el.decoding='async';
-      wrap.appendChild(el); card.appendChild(wrap); frag.appendChild(card);
+      card.appendChild(el); frag.appendChild(card);
     }
   }
   drum.appendChild(frag);
@@ -245,16 +283,13 @@ btnGo.addEventListener('click', async ()=>{
 
   drumWrap.classList.add('spinning');
 
+  // Плавный/заметный старт: loops меньше, duration больше (можно править)
   const plannedIndex = Math.floor(Math.random()*images.length);
-  /* Настрой для более «видимого» старта:
-     уменьшай loops (например, 3) и увеличивай duration (например, 5000+) */
-  const loops = 3;  // ← можно менять
-  const duration = 5200 + Math.floor(Math.random()*900); // ← можно менять
+  const loops = 3;
+  const duration = 5200 + Math.floor(Math.random()*900);
 
   const totalDistance = loops*images.length*step + plannedIndex*step;
   const start = performance.now();
-
-  const indexFromX = x => Math.round((x - itemSize/2) / step) % images.length;
 
   function frame(now){
     const t=Math.min(1,(now-start)/duration);
