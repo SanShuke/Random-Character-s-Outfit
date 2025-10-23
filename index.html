@@ -13,9 +13,13 @@
   --shadow-btn:0 2px 8px rgba(0,0,0,.08);
   --shadow-card:0 6px 14px rgba(0,0,0,.10);
 
-  /* по умолчанию (светлая тема): тёмные кнопки с белым текстом */
+  /* кнопки по умолчанию (светлая тема) */
   --btn-bg:#1a1d21; --btn-fg:#ffffff;
   --btn-bg-disabled:#3b3f45; --btn-fg-disabled:#cfd3da;
+
+  /* переменные превью — будут переопределяться из JS */
+  --thumb:64px;            /* размер квадрата превью */
+  --preview-cols:4;        /* количество колонок (макс 4) */
 }
 @media (prefers-color-scheme: dark){
   :root{
@@ -25,7 +29,7 @@
     --shadow-btn:0 2px 10px rgba(0,0,0,.35);
     --shadow-card:0 6px 16px rgba(0,0,0,.38);
 
-    /* в тёмной теме: очень светло-серые кнопки с чёрным текстом */
+    /* кнопки для тёмной темы */
     --btn-bg:#f2f3f5; --btn-fg:#0b0c0f;
     --btn-bg-disabled:#d6d9de; --btn-fg-disabled:#6c7077;
   }
@@ -54,12 +58,29 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--fg);
 .counter{font-weight:700;margin-bottom:12px}
 .hint{color:var(--muted);margin-top:18px}
 
-/* Барабан */
+/* ====== ПРЕДПРОСМОТР ====== */
+.preview{width:100%;padding:0 10%;margin-top:16px}
+.preview-grid{
+  display:grid;
+  grid-template-columns: repeat(var(--preview-cols), minmax(0,1fr));
+  gap:12px;
+  justify-items:center;
+}
+.preview-item{
+  width:var(--thumb); height:var(--thumb); aspect-ratio:1/1;
+  border-radius:14px; overflow:hidden;
+  background:var(--card-bg); border:2px solid var(--card-border);
+  box-shadow:var(--shadow-card); display:flex;align-items:center;justify-content:center;
+}
+.preview-item .img-wrap{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
+.preview-item img{max-width:100%;max-height:100%;object-fit:contain;display:block}
+
+/* ====== Барабан ====== */
 .drum-wrap{position:relative;width:100%;height:420px;display:flex;align-items:center;justify-content:center;overflow:hidden;contain:paint}
 .drum{display:flex;align-items:center;gap:18px;will-change:transform;transform:translate3d(0,0,0)}
 .drum-wrap.spinning .card{box-shadow:none}
 
-/* Карточки */
+/* Карточки в барабане */
 .card{
   width:256px;height:256px;aspect-ratio:1/1;border-radius:24px;overflow:hidden;
   background:var(--card-bg);border:2px solid var(--card-border);box-shadow:var(--shadow-card)
@@ -110,6 +131,12 @@ html,body{height:100%;margin:0;background:var(--bg);color:var(--fg);
 <div class="screen" id="screen-start">
   <div class="counter" id="counter" hidden>Загружено <span id="count">0</span> фотографий</div>
   <input id="file" type="file" accept="image/*" multiple hidden>
+
+  <!-- БЛОК ПРЕДПРОСМОТРА -->
+  <section id="preview" class="preview hidden">
+    <div id="preview-grid" class="preview-grid"></div>
+  </section>
+
   <button id="btn-load" class="btn">Загрузить фотографии</button>
   <button id="btn-go" class="btn" disabled>Let's go</button>
   <div class="hint">Максимум 8 фото</div>
@@ -140,6 +167,7 @@ let images=[];
 const $=s=>document.querySelector(s);
 const btnLoad=$('#btn-load'), btnGo=$('#btn-go'), file=$('#file');
 const counter=$('#counter'), countEl=$('#count');
+const preview=$('#preview'), previewGrid=$('#preview-grid');
 const screenStart=$('#screen-start'), screenSpin=$('#screen-spin');
 const drum=$('#drum'), drumWrap=$('#drumWrap');
 const overlay=$('#overlay'), btnDone=$('#btn-done');
@@ -153,16 +181,42 @@ file.addEventListener('change',(e)=>{
   countEl.textContent=images.length;
   counter.hidden=images.length===0;
   btnGo.disabled=images.length===0;
+
+  buildPreview();               // ← рисуем предпросмотр
 },{passive:true});
 
-/* Запуск рулетки — ДЛИННАЯ ЛЕНТА (~100+ карточек) */
+/* Построить превью-сетку */
+function buildPreview(){
+  previewGrid.innerHTML='';
+  if(!images.length){ preview.classList.add('hidden'); return; }
+
+  // размер и колонки: ≤4 → 2x128px, >4 → 4x64px
+  const small = images.length > 4;
+  const cols  = small ? 4 : 2;
+  const size  = small ? 64 : 128;
+
+  document.documentElement.style.setProperty('--preview-cols', cols);
+  document.documentElement.style.setProperty('--thumb', size+'px');
+
+  const frag=document.createDocumentFragment();
+  for(const img of images){
+    const item=document.createElement('div'); item.className='preview-item';
+    const wrap=document.createElement('div'); wrap.className='img-wrap';
+    const el=document.createElement('img'); el.src=img.src; el.loading='eager'; el.decoding='async';
+    wrap.appendChild(el); item.appendChild(wrap); frag.appendChild(item);
+  }
+  previewGrid.appendChild(frag);
+  preview.classList.remove('hidden');
+}
+
+/* Запуск рулетки — длинная лента (~120 карточек) */
 btnGo.addEventListener('click', async ()=>{
   if(!images.length) return;
 
-  // рендерим много карточек: целимся ~120 элементов всего
+  // длинная полоса
   drum.innerHTML='';
   const TARGET_ITEMS = 120;
-  const reps = Math.ceil(TARGET_ITEMS / images.length) + 4; // чуток с запасом
+  const reps = Math.ceil(TARGET_ITEMS / images.length) + 4;
   const frag=document.createDocumentFragment();
   for (let r=0;r<reps;r++){
     for (const img of images){
@@ -178,7 +232,7 @@ btnGo.addEventListener('click', async ()=>{
   screenSpin.classList.remove('hidden');
   await new Promise(requestAnimationFrame);
 
-  // размеры один раз
+  // размеры
   const first=drum.querySelector('.card');
   const itemSize=first.getBoundingClientRect().width;
   const gap=parseFloat(getComputedStyle(drum).gap)||GAP;
@@ -191,14 +245,14 @@ btnGo.addEventListener('click', async ()=>{
 
   drumWrap.classList.add('spinning');
 
-  // Путь без % stripLen — крутим «по-настоящему» по длинной ленте
   const plannedIndex = Math.floor(Math.random()*images.length);
-  const loops = 4; // визуально 3–4 секунды
-  const totalDistance = loops*images.length*step + plannedIndex*step;
+  /* Настрой для более «видимого» старта:
+     уменьшай loops (например, 3) и увеличивай duration (например, 5000+) */
+  const loops = 3;  // ← можно менять
+  const duration = 5200 + Math.floor(Math.random()*900); // ← можно менять
 
-  const duration = 4000 + Math.floor(Math.random()*900);
+  const totalDistance = loops*images.length*step + plannedIndex*step;
   const start = performance.now();
-  let lastTick=-1;
 
   const indexFromX = x => Math.round((x - itemSize/2) / step) % images.length;
 
@@ -208,9 +262,6 @@ btnGo.addEventListener('click', async ()=>{
     const x = eased * totalDistance;
 
     drum.style.transform = `translate3d(${cOff - x}px,0,0)`;
-
-    const idx=((indexFromX(x)%images.length)+images.length)%images.length;
-    if(idx!==lastTick){ lastTick=idx; /* звуки отключены */ }
 
     if(t<1) requestAnimationFrame(frame);
     else{
@@ -226,7 +277,6 @@ btnGo.addEventListener('click', async ()=>{
         const dx=Math.abs((r.left+r.width/2)-centerX);
         if(dx<bestDist){bestDist=dx;best=i;}
       }
-      // снимаем по модулю исходного массива (чтобы всплыло правильное)
       const finalIndex = (best % images.length + images.length) % images.length;
       showWinner(images[finalIndex].src);
     }
@@ -247,10 +297,12 @@ function showWinner(src){
 btnDone.addEventListener('click', ()=>{
   images.forEach(i=>URL.revokeObjectURL(i.src));
   images=[]; drum.innerHTML=''; overlay.classList.add('hidden');
-  counter.hidden=true; btnGo.disabled=true; screenSpin.classList.add('hidden'); screenStart.classList.remove('hidden');
+  counter.hidden=true; btnGo.disabled=true;
+  previewGrid.innerHTML=''; preview.classList.add('hidden');
+  screenSpin.classList.add('hidden'); screenStart.classList.remove('hidden');
 },{passive:true});
 
-/* respect reduced motion */
+/* reduced motion */
 if (window.matchMedia('(prefers-reduced-motion: reduce)').matches){
   const css=document.createElement('style');
   css.textContent='.winnerBox{animation:none}.winnerBox.pop{animation:popInGlow 360ms ease-out forwards}';
