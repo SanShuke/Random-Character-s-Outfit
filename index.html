@@ -11,15 +11,15 @@
   --card-bg:#e7e7ea; --card-border:rgba(255,255,255,.9);
   --overlay:rgba(0,0,0,.58); --pointer:rgba(0,0,0,.55);
   --shadow-btn:0 2px 8px rgba(0,0,0,.08);
-  --shadow-card:0 6px 14px rgba(0,0,0,.10);
+  --shadow-card:0 4px 10px rgba(0,0,0,.10);
 
-  /* кнопки (светлая тема): очень тёмно-серые с белым текстом */
+  /* кнопки (светлая тема): очень тёмно-серые + белый текст */
   --btn-bg:#1a1d21; --btn-fg:#ffffff;
   --btn-bg-disabled:#3b3f45; --btn-fg-disabled:#cfd3da;
 
   /* предпросмотр — управляем из JS */
-  --thumb:64px;
-  --preview-cols:4;
+  --thumb:64px;           /* теперь 2× меньше барабана (128/64) */
+  --preview-cols:3;
 }
 @media (prefers-color-scheme: dark){
   :root{
@@ -27,9 +27,9 @@
     --card-bg:#15181c; --card-border:rgba(255,255,255,.14);
     --overlay:rgba(0,0,0,.65); --pointer:rgba(255,255,255,.7);
     --shadow-btn:0 2px 10px rgba(0,0,0,.35);
-    --shadow-card:0 6px 16px rgba(0,0,0,.38);
+    --shadow-card:0 4px 12px rgba(0,0,0,.35);
 
-    /* кнопки (тёмная тема): очень светло-серые с чёрным текстом */
+    /* кнопки (тёмная тема): очень светло-серые + чёрный текст */
     --btn-bg:#f2f3f5; --btn-fg:#0b0c0f;
     --btn-bg-disabled:#d6d9de; --btn-fg-disabled:#6c7077;
   }
@@ -88,30 +88,32 @@ html,body{
   max-width:100%;max-height:100%;object-fit:contain;display:block;
 }
 
-/* ====== Барабан ====== */
+/* ====== Барабан (карточки теперь 128px) ====== */
 .drum-wrap{
-  position:relative;width:100%;height:420px;
+  position:relative;width:100%;height:340px; /* ниже общая высота */
   display:flex;align-items:center;justify-content:center;overflow:hidden;contain:paint;
 }
-.drum{display:flex;align-items:center;gap:18px;will-change:transform;transform:translate3d(0,0,0)}
+.drum{
+  display:flex;align-items:center;gap:14px;will-change:transform;transform:translate3d(0,0,0)
+}
 .drum-wrap.spinning .card{box-shadow:none}
 
-/* Карточки в барабане */
+/* Карточки */
 .card{
-  width:256px;height:256px;aspect-ratio:1/1;border-radius:24px;overflow:hidden;
+  width:128px;height:128px;aspect-ratio:1/1;border-radius:18px;overflow:hidden;
   background:var(--card-bg);border:2px solid var(--card-border);box-shadow:var(--shadow-card)
 }
 .card img{max-width:100%;max-height:100%;object-fit:contain;display:block}
 
 /* Индикатор */
 .center-indicator{
-  position:absolute;left:50%;bottom:18px;transform:translateX(-50%);
-  width:0;height:0;border-left:12px solid transparent;border-right:12px solid transparent;
-  border-bottom:14px solid var(--pointer);
+  position:absolute;left:50%;bottom:14px;transform:translateX(-50%);
+  width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;
+  border-bottom:12px solid var(--pointer);
   filter:drop-shadow(0 2px 4px rgba(0,0,0,.25));pointer-events:none;
 }
 
-/* Попап победителя */
+/* Попап победителя — упрощённая анимация scale-in */
 .overlay{
   position:fixed;inset:0;background:var(--overlay);
   display:flex;align-items:center;justify-content:center;
@@ -119,34 +121,30 @@ html,body{
 .popup{display:flex;flex-direction:column;align-items:center;gap:16px}
 .winnerBox{
   width:min(90vw,512px);height:min(90vw,512px);
-  aspect-ratio:1/1;border-radius:26px;border:3px solid #fff;
+  aspect-ratio:1/1;border-radius:22px;border:3px solid #fff;
   overflow:hidden;display:flex;align-items:center;justify-content:center;
-  animation:whiteGlow 2.4s ease-in-out infinite alternate,pulse 3.8s ease-in-out .6s infinite;
-  will-change:transform,box-shadow;
-}
-.winnerBox.pop{
-  animation:popInGlow 420ms cubic-bezier(.17,.94,.35,1.12) forwards,
-             pulse 3.8s ease-in-out .42s infinite;
 }
 .winner{max-width:100%;max-height:100%;object-fit:contain;display:block}
 
-/* Анимации */
-@keyframes popInGlow{
-  0%{transform:scale(.85);opacity:0;box-shadow:0 0 0 rgba(255,255,255,0)}
-  60%{transform:scale(1.05);opacity:1;box-shadow:0 0 90px rgba(255,255,255,.3)}
-  100%{transform:scale(1);opacity:1;box-shadow:0 0 160px rgba(255,255,255,.35)}
+/* Простая, лёгкая анимация */
+.winnerBox.pop{animation:popInSimple 260ms ease-out both}
+@keyframes popInSimple{
+  from{transform:scale(.9);opacity:0}
+  to  {transform:scale(1);opacity:1}
 }
-@keyframes whiteGlow{
-  from{box-shadow:0 0 40px rgba(255,255,255,.45),0 0 80px rgba(255,255,255,.35)}
-  to{box-shadow:0 0 55px rgba(255,255,255,.65),0 0 110px rgba(255,255,255,.45)}
-}
-@keyframes pulse{0%{transform:scale(.985)}50%{transform:scale(1.015)}100%{transform:scale(.985)}}
 
-/* Адаптив (минимально нужное) */
+/* Адаптив для барабана (чуть уменьшаем на узких) */
+@media (max-width:1000px){
+  .drum-wrap{height:300px}
+  .card{width:112px;height:112px}
+}
 @media (max-width:700px){
-  .card{width:180px;height:180px}
-  #btn-go{min-width:280px;padding:18px 20px;font-size:18px}
-  #btn-load{min-width:150px;font-size:13px}
+  .drum-wrap{height:280px}
+  .card{width:100px;height:100px}
+}
+@media (max-width:480px){
+  .drum-wrap{height:260px}
+  .card{width:90px;height:90px}
 }
 </style>
 </head>
@@ -188,7 +186,7 @@ const tg = window.Telegram?.WebApp;
 if (tg) { tg.ready(); tg.expand(); tg.disableVerticalSwipes?.(); }
 
 /* State & helpers */
-const MAX=8, GAP=18;
+const MAX=8, GAP=14; // gap тоже чуть меньше
 let images=[];
 const $=s=>document.querySelector(s);
 const btnLoad=$('#btn-load'), btnGo=$('#btn-go'), file=$('#file');
@@ -210,30 +208,22 @@ file.addEventListener('change',(e)=>{
   buildPreview();
 },{passive:true});
 
-/* ====== ПРАВИЛА раскладки предпросмотра ======
-  n<=2  → колонки = n         (2 → "2 в ряд")
-  n=3   → колонки = 3         (1 ряд из 3)
-  n=4   → колонки = 2         (2×2 — по твоему прошлому требованию)
-  n=5/6 → колонки = 3         (2 ряда: 3+2 и 3+3)
-  n>=7  → колонки = 4         (2 ряда: 4+3 / 4+4)
-  размер превью: 128px при 1–3 колонках, 64px при 4 колонках
-*/
+/* ====== правила предпросмотра (2×/4× меньше барабана) ====== */
 function computePreviewCols(n){
-  if (n <= 2) return n;      // 1 или 2
+  if (n <= 2) return n;      // 1 или 2 в ряд
   if (n === 3) return 3;     // 3 в ряд
   if (n === 4) return 2;     // 2×2
-  if (n === 5 || n === 6) return 3; // 3 столбца → 3+2 / 3+3
-  return 4;                  // 7–8 → максимум 4 в ряд
+  if (n === 5 || n === 6) return 3; // 3+2 / 3+3
+  return 4;                  // 7–8 → 4+3 / 4+4
 }
-
-/* Построить превью-сетку */
 function buildPreview(){
   previewGrid.innerHTML='';
   if(!images.length){ preview.classList.add('hidden'); return; }
 
   const n = images.length;
   const cols = computePreviewCols(n);
-  const size = (cols === 4) ? 64 : 128;  // 4 в ряд → 4x меньше, иначе 2x меньше
+  // так как в барабане 128px, делаем превью: при 1–3 колонках 64px (2× меньше), при 4 колонках 32px (4× меньше)
+  const size = (cols === 4) ? 32 : 64;
 
   document.documentElement.style.setProperty('--preview-cols', cols);
   document.documentElement.style.setProperty('--thumb', size + 'px');
@@ -272,7 +262,7 @@ btnGo.addEventListener('click', async ()=>{
 
   // размеры
   const first=drum.querySelector('.card');
-  const itemSize=first.getBoundingClientRect().width;
+  const itemSize=first.getBoundingClientRect().width; // ~128 (адаптив ниже может сделать 112/100/90)
   const gap=parseFloat(getComputedStyle(drum).gap)||GAP;
   const step=itemSize+gap;
 
@@ -283,16 +273,18 @@ btnGo.addEventListener('click', async ()=>{
 
   drumWrap.classList.add('spinning');
 
-  // Плавный/заметный старт: loops меньше, duration больше (можно править)
+  // Меньше loops + чуть быстрее: -0.8s от общей длительности
   const plannedIndex = Math.floor(Math.random()*images.length);
-  const loops = 3;
-  const duration = 5200 + Math.floor(Math.random()*900);
+  const loops = 3; // оставим 3 (контроль скорости начального движения)
+  const base = 5200 + Math.floor(Math.random()*900);
+  const duration = Math.max(2200, base - 800); // минус 0.8с, но не ниже 2.2с
 
   const totalDistance = loops*images.length*step + plannedIndex*step;
   const start = performance.now();
 
   function frame(now){
     const t=Math.min(1,(now-start)/duration);
+    // плавное замедление cubic-easeOut
     const eased = 1 - Math.pow(1-t,3);
     const x = eased * totalDistance;
 
@@ -319,12 +311,13 @@ btnGo.addEventListener('click', async ()=>{
   requestAnimationFrame(frame);
 },{passive:true});
 
-/* Попап победителя */
+/* Попап победителя — простая анимация */
 function showWinner(src){
   winner.src=src;
+  // перезапуск анимации: снимаем/вешаем класс
+  winnerBox.classList.remove('pop');
+  void winnerBox.offsetWidth;
   winnerBox.classList.add('pop');
-  const onEnd=e=>{ if(e.animationName==='popInGlow'){ winnerBox.classList.remove('pop'); winnerBox.removeEventListener('animationend',onEnd);} };
-  winnerBox.addEventListener('animationend',onEnd);
   overlay.classList.remove('hidden');
 }
 
@@ -337,10 +330,10 @@ btnDone.addEventListener('click', ()=>{
   screenSpin.classList.add('hidden'); screenStart.classList.remove('hidden');
 },{passive:true});
 
-/* reduced motion */
+/* reduced motion — анимацию попапа выключаем */
 if (window.matchMedia('(prefers-reduced-motion: reduce)').matches){
   const css=document.createElement('style');
-  css.textContent='.winnerBox{animation:none}.winnerBox.pop{animation:popInGlow 360ms ease-out forwards}';
+  css.textContent='.winnerBox.pop{animation:none}';
   document.head.appendChild(css);
 }
 </script>
