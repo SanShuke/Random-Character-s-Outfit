@@ -13,12 +13,12 @@
   --shadow-btn:0 2px 8px rgba(0,0,0,.08);
   --shadow-card:0 4px 10px rgba(0,0,0,.10);
 
-  /* кнопки (светлая тема): очень тёмно-серые + белый текст */
+  /* кнопки (светлая тема) */
   --btn-bg:#1a1d21; --btn-fg:#ffffff;
   --btn-bg-disabled:#3b3f45; --btn-fg-disabled:#cfd3da;
 
-  /* предпросмотр — управляем из JS */
-  --thumb:64px;           /* теперь 2× меньше барабана (128/64) */
+  /* предпросмотр — НЕ уменьшаем: 128px/64px как раньше */
+  --thumb:128px;           /* выставляется из JS: 128 или 64 */
   --preview-cols:3;
 }
 @media (prefers-color-scheme: dark){
@@ -29,7 +29,7 @@
     --shadow-btn:0 2px 10px rgba(0,0,0,.35);
     --shadow-card:0 4px 12px rgba(0,0,0,.35);
 
-    /* кнопки (тёмная тема): очень светло-серые + чёрный текст */
+    /* кнопки (тёмная тема) */
     --btn-bg:#f2f3f5; --btn-fg:#0b0c0f;
     --btn-bg-disabled:#d6d9de; --btn-fg-disabled:#6c7077;
   }
@@ -66,11 +66,11 @@ html,body{
 .counter{font-weight:700;margin-bottom:12px}
 .hint{color:var(--muted);margin-top:18px}
 
-/* ====== ПРЕДПРОСМОТР ====== */
+/* ====== ПРЕДПРОСМОТР (как было: 128/64) ====== */
 .preview{
   width:100%;
   padding:0 10%;
-  margin-top:24px; /* отступ от кнопки загрузки */
+  margin-top:24px;
 }
 .preview-grid{
   display:grid;
@@ -88,9 +88,9 @@ html,body{
   max-width:100%;max-height:100%;object-fit:contain;display:block;
 }
 
-/* ====== Барабан (карточки теперь 128px) ====== */
+/* ====== Барабан (карточки 128px) ====== */
 .drum-wrap{
-  position:relative;width:100%;height:340px; /* ниже общая высота */
+  position:relative;width:100%;height:340px;
   display:flex;align-items:center;justify-content:center;overflow:hidden;contain:paint;
 }
 .drum{
@@ -113,27 +113,27 @@ html,body{
   filter:drop-shadow(0 2px 4px rgba(0,0,0,.25));pointer-events:none;
 }
 
-/* Попап победителя — упрощённая анимация scale-in */
+/* Попап победителя — УМЕНЬШЕН до 256px + простая анимация */
 .overlay{
   position:fixed;inset:0;background:var(--overlay);
   display:flex;align-items:center;justify-content:center;
 }
 .popup{display:flex;flex-direction:column;align-items:center;gap:16px}
 .winnerBox{
-  width:min(90vw,512px);height:min(90vw,512px);
-  aspect-ratio:1/1;border-radius:22px;border:3px solid #fff;
+  width:min(90vw,256px);height:min(90vw,256px); /* ← было 512px, теперь 256px */
+  aspect-ratio:1/1;border-radius:18px;border:3px solid #fff;
   overflow:hidden;display:flex;align-items:center;justify-content:center;
 }
 .winner{max-width:100%;max-height:100%;object-fit:contain;display:block}
 
-/* Простая, лёгкая анимация */
-.winnerBox.pop{animation:popInSimple 260ms ease-out both}
+/* Простая, лёгкая анимация — без свечения/пульса */
+.winnerBox.pop{animation:popInSimple 220ms ease-out both}
 @keyframes popInSimple{
   from{transform:scale(.9);opacity:0}
   to  {transform:scale(1);opacity:1}
 }
 
-/* Адаптив для барабана (чуть уменьшаем на узких) */
+/* Адаптив для барабана */
 @media (max-width:1000px){
   .drum-wrap{height:300px}
   .card{width:112px;height:112px}
@@ -186,7 +186,7 @@ const tg = window.Telegram?.WebApp;
 if (tg) { tg.ready(); tg.expand(); tg.disableVerticalSwipes?.(); }
 
 /* State & helpers */
-const MAX=8, GAP=14; // gap тоже чуть меньше
+const MAX=8, GAP=14; // gap для маленьких карточек
 let images=[];
 const $=s=>document.querySelector(s);
 const btnLoad=$('#btn-load'), btnGo=$('#btn-go'), file=$('#file');
@@ -208,7 +208,7 @@ file.addEventListener('change',(e)=>{
   buildPreview();
 },{passive:true});
 
-/* ====== правила предпросмотра (2×/4× меньше барабана) ====== */
+/* Предпросмотр — правила раскладки как обсуждали */
 function computePreviewCols(n){
   if (n <= 2) return n;      // 1 или 2 в ряд
   if (n === 3) return 3;     // 3 в ряд
@@ -222,8 +222,7 @@ function buildPreview(){
 
   const n = images.length;
   const cols = computePreviewCols(n);
-  // так как в барабане 128px, делаем превью: при 1–3 колонках 64px (2× меньше), при 4 колонках 32px (4× меньше)
-  const size = (cols === 4) ? 32 : 64;
+  const size = (cols === 4) ? 64 : 128;   // ← ВЕРНУЛ КАК БЫЛО: 128/64
 
   document.documentElement.style.setProperty('--preview-cols', cols);
   document.documentElement.style.setProperty('--thumb', size + 'px');
@@ -262,7 +261,7 @@ btnGo.addEventListener('click', async ()=>{
 
   // размеры
   const first=drum.querySelector('.card');
-  const itemSize=first.getBoundingClientRect().width; // ~128 (адаптив ниже может сделать 112/100/90)
+  const itemSize=first.getBoundingClientRect().width; // ~128 (адаптив ниже может 112/100/90)
   const gap=parseFloat(getComputedStyle(drum).gap)||GAP;
   const step=itemSize+gap;
 
@@ -273,18 +272,17 @@ btnGo.addEventListener('click', async ()=>{
 
   drumWrap.classList.add('spinning');
 
-  // Меньше loops + чуть быстрее: -0.8s от общей длительности
+  // Ускоряем вращение на ~0.8s: уменьшаем duration
   const plannedIndex = Math.floor(Math.random()*images.length);
-  const loops = 3; // оставим 3 (контроль скорости начального движения)
+  const loops = 3; // оставим 3 для читаемого старта
   const base = 5200 + Math.floor(Math.random()*900);
-  const duration = Math.max(2200, base - 800); // минус 0.8с, но не ниже 2.2с
+  const duration = Math.max(2000, base - 800); // быстрее на 0.8s, но не короче 2s
 
   const totalDistance = loops*images.length*step + plannedIndex*step;
   const start = performance.now();
 
   function frame(now){
     const t=Math.min(1,(now-start)/duration);
-    // плавное замедление cubic-easeOut
     const eased = 1 - Math.pow(1-t,3);
     const x = eased * totalDistance;
 
@@ -311,12 +309,11 @@ btnGo.addEventListener('click', async ()=>{
   requestAnimationFrame(frame);
 },{passive:true});
 
-/* Попап победителя — простая анимация */
+/* Попап победителя — простая, лёгкая анимация */
 function showWinner(src){
   winner.src=src;
-  // перезапуск анимации: снимаем/вешаем класс
   winnerBox.classList.remove('pop');
-  void winnerBox.offsetWidth;
+  void winnerBox.offsetWidth; // перезапуск
   winnerBox.classList.add('pop');
   overlay.classList.remove('hidden');
 }
@@ -330,7 +327,7 @@ btnDone.addEventListener('click', ()=>{
   screenSpin.classList.add('hidden'); screenStart.classList.remove('hidden');
 },{passive:true});
 
-/* reduced motion — анимацию попапа выключаем */
+/* reduced motion — выключаем анимацию попапа */
 if (window.matchMedia('(prefers-reduced-motion: reduce)').matches){
   const css=document.createElement('style');
   css.textContent='.winnerBox.pop{animation:none}';
