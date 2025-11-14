@@ -43,6 +43,7 @@ html,body{
 }
 .hidden{display:none!important}
 
+/* Кнопки */
 .btn{
   border:none;border-radius:22px;min-width:260px;padding:14px 18px;
   font:700 16px/1.1 inherit;cursor:pointer;
@@ -82,27 +83,32 @@ html,body{
 }
 .preview-item img{max-width:100%;max-height:100%;object-fit:contain;display:block}
 
-/* ====== Барабан ====== */
+/* ====== Барабан (УМЕНЬШЕННЫЕ КАРТОЧКИ) ====== */
 .drum-wrap{
-  position:relative;width:100%;height:340px;
+  position:relative;width:100%;height:300px;
   display:flex;align-items:center;justify-content:center;overflow:hidden;contain:paint;
 }
 .drum{
-  display:flex;align-items:center;gap:14px;will-change:transform;transform:translate3d(0,0,0)
+  display:flex;align-items:center;gap:12px;will-change:transform;
 }
+
+/* КАРТОЧКИ УМЕНЬШЕНЫ С 128px ДО 86px */
 .card{
-  width:128px;height:128px;border-radius:18px;overflow:hidden;
-  background:var(--card-bg);border:2px solid var(--card-border);box-shadow:var(--shadow-card)
+  width:86px; height:86px;
+  border-radius:14px;overflow:hidden;
+  background:var(--card-bg);border:2px solid var(--card-border);
+  box-shadow:var(--shadow-card);
 }
 .card img{max-width:100%;max-height:100%;object-fit:contain;display:block}
+
+/* Индикатор */
 .center-indicator{
   position:absolute;left:50%;bottom:14px;transform:translateX(-50%);
   width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;
   border-bottom:12px solid var(--pointer);
-  filter:drop-shadow(0 2px 4px rgba(0,0,0,.25));pointer-events:none;
 }
 
-/* ====== Попап победителя ====== */
+/* ====== ПОБЕДИТЕЛЬ (УМЕНЬШЕН С 192px ДО 96px) ====== */
 .overlay{
   position:fixed;inset:0;background:var(--overlay);
 }
@@ -110,30 +116,23 @@ html,body{
   position:fixed;left:50%;transform:translate(-50%,-50%);
   display:flex;flex-direction:column;align-items:center;gap:12px;
 }
+
 .winnerBox{
-  width:192px;height:192px;
-  border-radius:18px;border:3px solid #fff;
+  width:96px; height:96px; /* ↓ уменьшено ровно в 2 раза */
+  border-radius:14px;border:3px solid #fff;
   overflow:hidden;display:flex;align-items:center;justify-content:center;
 }
+
 .winner{max-width:100%;max-height:100%;object-fit:contain;display:block}
-.winnerBox.pop{animation:popInSimple 200ms ease-out both}
+
+.winnerBox.pop{
+  animation:popInSimple 200ms ease-out both;
+}
 @keyframes popInSimple{
   from{transform:scale(.9);opacity:0}
   to{transform:scale(1);opacity:1}
 }
 
-@media (max-width:1000px){
-  .drum-wrap{height:300px}
-  .card{width:112px;height:112px}
-}
-@media (max-width:700px){
-  .drum-wrap{height:280px}
-  .card{width:100px;height:100px}
-}
-@media (max-width:480px){
-  .drum-wrap{height:260px}
-  .card{width:90px;height:90px}
-}
 </style>
 </head>
 <body>
@@ -168,98 +167,136 @@ html,body{
 </div>
 
 <script>
-const tg = window.Telegram?.WebApp;
-if (tg) { tg.ready(); tg.expand(); tg.disableVerticalSwipes?.(); }
+const tg=window.Telegram?.WebApp;
+if(tg){tg.ready();tg.expand();tg.disableVerticalSwipes?.();}
 
-const MAX=8, GAP=14;
+const MAX=8, GAP=12;
 let images=[];
-const $=s=>document.querySelector(s);
-const btnLoad=$('#btn-load'), btnGo=$('#btn-go'), file=$('#file');
-const counter=$('#counter'), countEl=$('#count');
-const preview=$('#preview'), previewGrid=$('#preview-grid');
-const screenStart=$('#screen-start'), screenSpin=$('#screen-spin');
-const drum=$('#drum'), drumWrap=$('#drumWrap');
-const overlay=$('#overlay'), btnDone=$('#btn-done');
-const popup=$('#popup');
-const winner=$('#winner'), winnerBox=$('#winnerBox');
 
-/* Загрузка */
+const $=s=>document.querySelector(s);
+const btnLoad=$('#btn-load'), btnGo=$('#btn-go'),
+      file=$('#file'), counter=$('#counter'),
+      countEl=$('#count'), preview=$('#preview'),
+      previewGrid=$('#preview-grid'),
+      screenStart=$('#screen-start'), screenSpin=$('#screen-spin'),
+      drum=$('#drum'), drumWrap=$('#drumWrap'),
+      overlay=$('#overlay'), popup=$('#popup'),
+      btnDone=$('#btn-done'),
+      winner=$('#winner'), winnerBox=$('#winnerBox');
+
+/* ===============================
+      ЗАГРУЗКА ФОТО
+=============================== */
 btnLoad.addEventListener('click',()=>file.click());
 file.addEventListener('change',e=>{
   const files=Array.from(e.target.files||[]).slice(0,MAX);
   images=files.map(f=>({src:URL.createObjectURL(f)}));
+
   countEl.textContent=images.length;
   counter.hidden=!images.length;
   btnGo.disabled=!images.length;
+
   buildPreview();
 });
 
+/* ===============================
+      ПРЕДПРОСМОТР
+=============================== */
 function computePreviewCols(n){
-  if(n<=2)return n;if(n===3)return 3;if(n===4)return 2;
-  if(n===5||n===6)return 3;return 4;
+  if(n<=2)return n;
+  if(n===3)return 3;
+  if(n===4)return 2;
+  if(n===5||n===6)return 3;
+  return 4;
 }
+
 function buildPreview(){
   previewGrid.innerHTML='';
   if(!images.length){preview.classList.add('hidden');return;}
-  const n=images.length,cols=computePreviewCols(n);
+
+  const n=images.length;
+  const cols=computePreviewCols(n);
   const size=(cols===4)?64:128;
+
   document.documentElement.style.setProperty('--preview-cols',cols);
   document.documentElement.style.setProperty('--thumb',size+'px');
-  const frag=document.createDocumentFragment();
+
   for(const img of images){
-    const d=document.createElement('div');d.className='preview-item';
-    const el=document.createElement('img');el.src=img.src;
-    d.appendChild(el);frag.appendChild(d);
+    const box=document.createElement('div');
+    box.className='preview-item';
+    const im=document.createElement('img');
+    im.src=img.src;
+    box.appendChild(im);
+    previewGrid.appendChild(box);
   }
-  previewGrid.appendChild(frag);preview.classList.remove('hidden');
+
+  preview.classList.remove('hidden');
 }
 
-/* --- рулетка --- */
+/* ===============================
+      РУЛЕТКА
+=============================== */
 btnGo.addEventListener('click',async()=>{
   if(!images.length)return;
+
+  /* создаём длинную ленту */
   drum.innerHTML='';
-  const TARGET=120,reps=Math.ceil(TARGET/images.length)+4;
-  const frag=document.createDocumentFragment();
-  for(let r=0;r<reps;r++)for(const img of images){
-    const c=document.createElement('div');c.className='card';
-    const el=document.createElement('img');el.src=img.src;
-    c.appendChild(el);frag.appendChild(c);
+  const TARGET=120;
+  const reps=Math.ceil(TARGET/images.length)+4;
+
+  for(let r=0;r<reps;r++){
+    for(const img of images){
+      const card=document.createElement('div');
+      card.className='card';
+      const el=document.createElement('img');
+      el.src=img.src;
+      card.appendChild(el);
+      drum.appendChild(card);
+    }
   }
-  drum.appendChild(frag);
+
   screenStart.classList.add('hidden');
   screenSpin.classList.remove('hidden');
+
   await new Promise(r=>requestAnimationFrame(r));
 
   const first=drum.querySelector('.card');
-  const itemSize=first.getBoundingClientRect().width;
+  const itemSize=first.getBoundingClientRect().width; /* теперь 86px */
   const gap=parseFloat(getComputedStyle(drum).gap)||GAP;
   const step=itemSize+gap;
+
   const centerOffset=()=>drumWrap.clientWidth/2-itemSize/2;
   let cOff=centerOffset();
-  const onResize=()=>{cOff=centerOffset();if(!overlay.classList.contains('hidden'))positionPopup();};
+
+  const onResize=()=>{cOff=centerOffset(); if(!overlay.classList.contains('hidden')) positionPopup();};
   window.addEventListener('resize',onResize);
 
   const loops=3;
   const duration=Math.max(2000,5200+Math.random()*900-800);
   const planned=Math.floor(Math.random()*images.length);
   const total=loops*images.length*step+planned*step;
+
   const start=performance.now();
   function frame(now){
     const t=Math.min(1,(now-start)/duration);
     const eased=1-Math.pow(1-t,3);
     const x=eased*total;
     drum.style.transform=`translate3d(${cOff-x}px,0,0)`;
-    if(t<1)requestAnimationFrame(frame);
-    else{
+
+    if(t<1)requestAnimationFrame(frame); else {
       window.removeEventListener('resize',onResize);
+
       const wrapRect=drumWrap.getBoundingClientRect();
       const centerX=wrapRect.left+wrapRect.width/2;
-      let best=0,bestDist=1e9,nodes=drum.children;
+      let best=0,bestDist=1e9;
+      const nodes=drum.children;
+
       for(let i=0;i<nodes.length;i++){
         const r=nodes[i].getBoundingClientRect();
         const dx=Math.abs((r.left+r.width/2)-centerX);
         if(dx<bestDist){bestDist=dx;best=i;}
       }
+
       const finalIndex=(best%images.length+images.length)%images.length;
       showWinner(images[finalIndex].src);
     }
@@ -267,32 +304,43 @@ btnGo.addEventListener('click',async()=>{
   requestAnimationFrame(frame);
 });
 
-/* --- центрируем попап ниже барабана на 32px --- */
+/* ===============================
+    ПОЗИЦИОНИРОВАНИЕ ПОБЕДИТЕЛЯ
+=============================== */
 function positionPopup(){
   const rect=drumWrap.getBoundingClientRect();
-  const centerY=rect.top+rect.height/2+32; // смещение вниз
+  const centerY=rect.top+rect.height/2+32; /* смещение вниз */
   popup.style.top=centerY+'px';
 }
 
 function showWinner(src){
   winner.src=src;
   positionPopup();
+
   winnerBox.classList.remove('pop');
   void winnerBox.offsetWidth;
   winnerBox.classList.add('pop');
+
   overlay.classList.remove('hidden');
+
   const onResize=()=>positionPopup();
   window.addEventListener('resize',onResize);
+
   btnDone.addEventListener('click',()=>window.removeEventListener('resize',onResize),{once:true});
 }
 
-/* сброс */
+/* СБРОС */
 btnDone.addEventListener('click',()=>{
   images.forEach(i=>URL.revokeObjectURL(i.src));
-  images=[];drum.innerHTML='';overlay.classList.add('hidden');
-  counter.hidden=true;btnGo.disabled=true;
-  previewGrid.innerHTML='';preview.classList.add('hidden');
-  screenSpin.classList.add('hidden');screenStart.classList.remove('hidden');
+  images=[];
+  drum.innerHTML='';
+  overlay.classList.add('hidden');
+  counter.hidden=true;
+  btnGo.disabled=true;
+  previewGrid.innerHTML='';
+  preview.classList.add('hidden');
+  screenSpin.classList.add('hidden');
+  screenStart.classList.remove('hidden');
 });
 </script>
 </body>
